@@ -1,11 +1,11 @@
 ---
 name: add-image-vision
-description: Add image vision to NanoClaw agents. Resizes and processes WhatsApp image attachments, then sends them to Claude as multimodal content blocks.
+description: Add image vision to NanoClaw agents. Resizes and processes image attachments from WhatsApp and Discord, then sends them to Claude as multimodal content blocks.
 ---
 
 # Image Vision Skill
 
-Adds the ability for NanoClaw agents to see and understand images sent via WhatsApp. Images are downloaded, resized with sharp, saved to the group workspace, and passed to the agent as base64-encoded multimodal content blocks.
+Adds the ability for NanoClaw agents to see and understand images sent via WhatsApp or Discord. Images are downloaded, resized with sharp, saved to the group workspace, and passed to the agent as base64-encoded multimodal content blocks.
 
 ## Phase 1: Pre-flight
 
@@ -56,15 +56,24 @@ Adds the ability for NanoClaw agents to see and understand images sent via Whats
 
 ## Phase 4: Verify
 
+### WhatsApp
 1. Send an image in a registered WhatsApp group
 2. Check the agent responds with understanding of the image content
-3. Check logs for "Processed image attachment":
-   ```bash
-   tail -50 groups/*/logs/container-*.log
-   ```
+
+### Discord
+1. Send a PNG/JPG in a registered Discord channel (with @bot mention)
+2. Check the agent responds with understanding of the image content
+
+### Check logs
+```bash
+tail -50 groups/*/logs/container-*.log
+```
+
+Look for "Discord image saved" or "Processed image attachment".
 
 ## Troubleshooting
 
-- **"Image - download failed"**: Check WhatsApp connection stability. The download may timeout on slow connections.
+- **"Image - download failed"** (WhatsApp): Check WhatsApp connection stability. The download may timeout on slow connections.
+- **"Discord image download failed"**: Check network connectivity. Discord CDN URLs may be rate-limited.
 - **"Image - processing failed"**: Sharp may not be installed correctly. Run `npm ls sharp` to verify.
 - **Agent doesn't mention image content**: Check container logs for "Loaded image" messages. If missing, ensure agent-runner source was synced to group caches.

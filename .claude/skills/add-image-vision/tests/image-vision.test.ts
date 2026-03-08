@@ -15,7 +15,7 @@ describe('add-image-vision skill package', () => {
     it('has a valid manifest.yaml', () => {
       expect(fs.existsSync(path.join(SKILL_DIR, 'manifest.yaml'))).toBe(true);
       expect(content).toContain('skill: add-image-vision');
-      expect(content).toContain('version: 1.1.0');
+      expect(content).toContain('version: 1.2.0');
     });
 
     it('declares sharp as npm dependency', () => {
@@ -35,6 +35,8 @@ describe('add-image-vision skill package', () => {
     it('lists all modify files', () => {
       expect(content).toContain('src/channels/whatsapp.ts');
       expect(content).toContain('src/channels/whatsapp.test.ts');
+      expect(content).toContain('src/channels/discord.ts');
+      expect(content).toContain('src/channels/discord.test.ts');
       expect(content).toContain('src/container-runner.ts');
       expect(content).toContain('src/index.ts');
       expect(content).toContain('container/agent-runner/src/index.ts');
@@ -74,6 +76,8 @@ describe('add-image-vision skill package', () => {
     const modifyFiles = [
       'src/channels/whatsapp.ts',
       'src/channels/whatsapp.test.ts',
+      'src/channels/discord.ts',
+      'src/channels/discord.test.ts',
       'src/container-runner.ts',
       'src/index.ts',
       'container/agent-runner/src/index.ts',
@@ -91,6 +95,8 @@ describe('add-image-vision skill package', () => {
     const intentFiles = [
       'src/channels/whatsapp.ts.intent.md',
       'src/channels/whatsapp.test.ts.intent.md',
+      'src/channels/discord.ts.intent.md',
+      'src/channels/discord.test.ts.intent.md',
       'src/container-runner.ts.intent.md',
       'src/index.ts.intent.md',
       'container/agent-runner/src/index.ts.intent.md',
@@ -246,6 +252,86 @@ describe('add-image-vision skill package', () => {
       expect(content).toContain('processGroupMessages');
       expect(content).toContain('startMessageLoop');
       expect(content).toContain('async function main()');
+    });
+  });
+
+  describe('modify/src/channels/discord.ts', () => {
+    let content: string;
+
+    beforeAll(() => {
+      content = fs.readFileSync(
+        path.join(SKILL_DIR, 'modify', 'src', 'channels', 'discord.ts'),
+        'utf-8',
+      );
+    });
+
+    it('imports image utilities', () => {
+      expect(content).toContain("from '../image.js'");
+      expect(content).toContain('processImage');
+    });
+
+    it('imports resolveGroupFolderPath', () => {
+      expect(content).toContain('resolveGroupFolderPath');
+      expect(content).toContain("from '../group-folder.js'");
+    });
+
+    it('includes image download and process block', () => {
+      expect(content).toContain('fetch(att.url)');
+      expect(content).toContain('processImage(buffer, groupDir');
+      expect(content).toContain('Discord image saved');
+      expect(content).toContain('Discord image download failed');
+    });
+
+    it('preserves core DiscordChannel structure', () => {
+      expect(content).toContain('export class DiscordChannel implements Channel');
+      expect(content).toContain('async connect()');
+      expect(content).toContain('async sendMessage(');
+      expect(content).toContain('ownsJid(');
+      expect(content).toContain('async setTyping(');
+      expect(content).toContain('async disconnect()');
+    });
+  });
+
+  describe('modify/src/channels/discord.test.ts', () => {
+    let content: string;
+
+    beforeAll(() => {
+      content = fs.readFileSync(
+        path.join(SKILL_DIR, 'modify', 'src', 'channels', 'discord.test.ts'),
+        'utf-8',
+      );
+    });
+
+    it('mocks image.js module', () => {
+      expect(content).toContain("vi.mock('../image.js'");
+      expect(content).toContain('processImage');
+    });
+
+    it('mocks group-folder.js', () => {
+      expect(content).toContain("vi.mock('../group-folder.js'");
+      expect(content).toContain('resolveGroupFolderPath');
+    });
+
+    it('mocks global fetch', () => {
+      expect(content).toContain('stubGlobal');
+      expect(content).toContain('fetch');
+    });
+
+    it('includes image test cases', () => {
+      expect(content).toContain('downloads and processes image attachments');
+      expect(content).toContain('falls back to placeholder when image download fails');
+    });
+
+    it('preserves all existing test sections', () => {
+      expect(content).toContain('connection lifecycle');
+      expect(content).toContain('text message handling');
+      expect(content).toContain('@mention translation');
+      expect(content).toContain('attachments');
+      expect(content).toContain('reply context');
+      expect(content).toContain('sendMessage');
+      expect(content).toContain('ownsJid');
+      expect(content).toContain('setTyping');
+      expect(content).toContain('channel properties');
     });
   });
 
