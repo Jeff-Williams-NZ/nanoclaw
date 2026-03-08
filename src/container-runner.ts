@@ -39,6 +39,7 @@ export interface ContainerInput {
   isScheduledTask?: boolean;
   assistantName?: string;
   secrets?: Record<string, string>;
+  imageAttachments?: Array<{ relativePath: string; mediaType: string }>;
 }
 
 export interface ContainerOutput {
@@ -120,6 +121,11 @@ function buildVolumeMounts(
     '.claude',
   );
   fs.mkdirSync(groupSessionsDir, { recursive: true });
+  // Claude Agent SDK writes debug logs to ~/.claude/debug/
+  // Use mode 0o777 so the container process (which may run as a different UID) can write.
+  const debugDir = path.join(groupSessionsDir, 'debug');
+  fs.mkdirSync(debugDir, { recursive: true });
+  try { fs.chmodSync(debugDir, 0o777); } catch { /* best effort */ }
   const settingsFile = path.join(groupSessionsDir, 'settings.json');
   if (!fs.existsSync(settingsFile)) {
     fs.writeFileSync(
@@ -163,10 +169,13 @@ function buildVolumeMounts(
 
   // Per-group IPC namespace: each group gets its own IPC directory
   // This prevents cross-group privilege escalation via IPC
+  // Use mode 0o777 so the container process (different UID under Podman) can read/write.
   const groupIpcDir = resolveGroupIpcPath(group.folder);
-  fs.mkdirSync(path.join(groupIpcDir, 'messages'), { recursive: true });
-  fs.mkdirSync(path.join(groupIpcDir, 'tasks'), { recursive: true });
-  fs.mkdirSync(path.join(groupIpcDir, 'input'), { recursive: true });
+  for (const sub of ['messages', 'tasks', 'input']) {
+    const dir = path.join(groupIpcDir, sub);
+    fs.mkdirSync(dir, { recursive: true });
+    try { fs.chmodSync(dir, 0o777); } catch { /* best effort */ }
+  }
   mounts.push({
     hostPath: groupIpcDir,
     containerPath: '/workspace/ipc',
@@ -238,7 +247,14 @@ function buildContainerArgs(
   const hostUid = process.getuid?.();
   const hostGid = process.getgid?.();
   if (hostUid != null && hostUid !== 0 && hostUid !== 1000) {
-    args.push('--user', `${hostUid}:${hostGid}`);
+    if (CONTAINER_RUNTIME_BIN === 'podman') {
+      // Podman rootless uses user namespace remapping. --userns=keep-id
+      // maps the host UID to the same UID inside the container, ensuring
+      // bind-mounted files are accessible without permission issues.
+      args.push('--userns=keep-id');
+    } else {
+      args.push('--user', `${hostUid}:${hostGid}`);
+    }
     args.push('-e', 'HOME=/home/node');
   }
 
@@ -249,6 +265,10 @@ function buildContainerArgs(
       args.push('-v', `${mount.hostPath}:${mount.containerPath}`);
     }
   }
+
+  // Use host networking so in-container MCP servers (e.g. Ollama) can reach
+  // host services on localhost. Required for podman on WSL2/Linux.
+  args.push('--network', 'host');
 
   args.push(CONTAINER_IMAGE);
 
@@ -377,7 +397,13 @@ export async function runContainerAgent(
       const chunk = data.toString();
       const lines = chunk.trim().split('\n');
       for (const line of lines) {
-        if (line) logger.debug({ container: group.folder }, line);
+        if (!line) continue;
+        // Surface Ollama MCP activity at info level for visibility
+        if (line.includes('[OLLAMA]')) {
+          logger.info({ container: group.folder }, line);
+        } else {
+          logger.debug({ container: group.folder }, line);
+        }
       }
       // Don't reset timeout on stderr — SDK writes debug logs continuously.
       // Timeout only resets on actual output (OUTPUT_MARKER in stdout).
