@@ -125,7 +125,11 @@ function buildVolumeMounts(
   // Use mode 0o777 so the container process (which may run as a different UID) can write.
   const debugDir = path.join(groupSessionsDir, 'debug');
   fs.mkdirSync(debugDir, { recursive: true });
-  try { fs.chmodSync(debugDir, 0o777); } catch { /* best effort */ }
+  try {
+    fs.chmodSync(debugDir, 0o777);
+  } catch {
+    /* best effort */
+  }
   const settingsFile = path.join(groupSessionsDir, 'settings.json');
   if (!fs.existsSync(settingsFile)) {
     fs.writeFileSync(
@@ -174,7 +178,11 @@ function buildVolumeMounts(
   for (const sub of ['messages', 'tasks', 'input']) {
     const dir = path.join(groupIpcDir, sub);
     fs.mkdirSync(dir, { recursive: true });
-    try { fs.chmodSync(dir, 0o777); } catch { /* best effort */ }
+    try {
+      fs.chmodSync(dir, 0o777);
+    } catch {
+      /* best effort */
+    }
   }
   mounts.push({
     hostPath: groupIpcDir,

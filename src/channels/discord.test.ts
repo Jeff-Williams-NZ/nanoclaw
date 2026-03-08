@@ -31,10 +31,12 @@ vi.mock('../group-folder.js', () => ({
 
 // Mock image processing
 vi.mock('../image.js', () => ({
-  processImage: vi.fn(async (_buffer: Buffer, _groupDir: string, _caption: string) => ({
-    content: '[Image: attachments/img-1234-abcd.jpg]',
-    relativePath: 'attachments/img-1234-abcd.jpg',
-  })),
+  processImage: vi.fn(
+    async (_buffer: Buffer, _groupDir: string, _caption: string) => ({
+      content: '[Image: attachments/img-1234-abcd.jpg]',
+      relativePath: 'attachments/img-1234-abcd.jpg',
+    }),
+  ),
 }));
 
 // --- discord.js mock ---
@@ -180,9 +182,7 @@ function createMessage(overrides: {
     member: overrides.memberDisplayName
       ? { displayName: overrides.memberDisplayName }
       : null,
-    guild: overrides.guildName
-      ? { name: overrides.guildName }
-      : null,
+    guild: overrides.guildName ? { name: overrides.guildName } : null,
     channel: {
       name: overrides.channelName ?? 'general',
       messages: {
@@ -515,7 +515,14 @@ describe('DiscordChannel', () => {
       await channel.connect();
 
       const attachments = new Map([
-        ['att1', { name: 'photo.png', contentType: 'image/png', url: 'https://cdn.discord.com/photo.png' }],
+        [
+          'att1',
+          {
+            name: 'photo.png',
+            contentType: 'image/png',
+            url: 'https://cdn.discord.com/photo.png',
+          },
+        ],
       ]);
       const msg = createMessage({
         content: '',
@@ -524,7 +531,9 @@ describe('DiscordChannel', () => {
       });
       await triggerMessage(msg);
 
-      expect(mockFetch).toHaveBeenCalledWith('https://cdn.discord.com/photo.png');
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://cdn.discord.com/photo.png',
+      );
       expect(opts.onMessage).toHaveBeenCalledWith(
         'dc:1234567890123456',
         expect.objectContaining({
@@ -585,7 +594,14 @@ describe('DiscordChannel', () => {
       await channel.connect();
 
       const attachments = new Map([
-        ['att1', { name: 'photo.jpg', contentType: 'image/jpeg', url: 'https://cdn.discord.com/photo.jpg' }],
+        [
+          'att1',
+          {
+            name: 'photo.jpg',
+            contentType: 'image/jpeg',
+            url: 'https://cdn.discord.com/photo.jpg',
+          },
+        ],
       ]);
       const msg = createMessage({
         content: 'Check this out',
@@ -608,7 +624,14 @@ describe('DiscordChannel', () => {
       await channel.connect();
 
       const attachments = new Map([
-        ['att1', { name: 'a.png', contentType: 'image/png', url: 'https://cdn.discord.com/a.png' }],
+        [
+          'att1',
+          {
+            name: 'a.png',
+            contentType: 'image/png',
+            url: 'https://cdn.discord.com/a.png',
+          },
+        ],
         ['att2', { name: 'b.txt', contentType: 'text/plain' }],
       ]);
       const msg = createMessage({
@@ -634,7 +657,14 @@ describe('DiscordChannel', () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
       const attachments = new Map([
-        ['att1', { name: 'broken.png', contentType: 'image/png', url: 'https://cdn.discord.com/broken.png' }],
+        [
+          'att1',
+          {
+            name: 'broken.png',
+            contentType: 'image/png',
+            url: 'https://cdn.discord.com/broken.png',
+          },
+        ],
       ]);
       const msg = createMessage({
         content: '',
@@ -686,8 +716,11 @@ describe('DiscordChannel', () => {
 
       await channel.sendMessage('dc:1234567890123456', 'Hello');
 
-      const fetchedChannel = await currentClient().channels.fetch('1234567890123456');
-      expect(currentClient().channels.fetch).toHaveBeenCalledWith('1234567890123456');
+      const fetchedChannel =
+        await currentClient().channels.fetch('1234567890123456');
+      expect(currentClient().channels.fetch).toHaveBeenCalledWith(
+        '1234567890123456',
+      );
     });
 
     it('strips dc: prefix from JID', async () => {
