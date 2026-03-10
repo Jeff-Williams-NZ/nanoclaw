@@ -12,6 +12,12 @@ vi.mock('../env.js', () => ({ readEnvFile: vi.fn(() => ({})) }));
 vi.mock('../config.js', () => ({
   ASSISTANT_NAME: 'Andy',
   TRIGGER_PATTERN: /^@Andy\b/i,
+  buildTriggerRegex: (trigger?: string) => {
+    if (!trigger) return /^@Andy\b/i;
+    const name = trigger.startsWith('@') ? trigger.slice(1) : trigger;
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`^@${escaped}\\b`, 'i');
+  },
 }));
 
 // Mock logger
@@ -481,6 +487,35 @@ describe('DiscordChannel', () => {
         'dc:1234567890123456',
         expect.objectContaining({
           content: 'hello everyone',
+        }),
+      );
+    });
+
+    it('translates bot mention to per-group trigger when group has custom trigger', async () => {
+      const opts = createTestOpts({
+        registeredGroups: vi.fn(() => ({
+          'dc:1234567890123456': {
+            name: 'Coding Channel',
+            folder: 'discord_coding',
+            trigger: '@Bob',
+            added_at: '2024-01-01T00:00:00.000Z',
+          },
+        })),
+      });
+      const channel = new DiscordChannel('test-token', opts);
+      await channel.connect();
+
+      const msg = createMessage({
+        content: '<@999888777> help me with this code',
+        mentionsBotId: true,
+        guildName: 'Server',
+      });
+      await triggerMessage(msg);
+
+      expect(opts.onMessage).toHaveBeenCalledWith(
+        'dc:1234567890123456',
+        expect.objectContaining({
+          content: '@Bob help me with this code',
         }),
       );
     });
