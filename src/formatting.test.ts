@@ -280,3 +280,32 @@ describe('trigger gating (requiresTrigger interaction)', () => {
     expect(shouldProcess(false, false, msgs)).toBe(true);
   });
 });
+
+// --- Per-group trigger gating ---
+
+describe('per-group trigger gating', () => {
+  function shouldProcess(
+    requiresTrigger: boolean | undefined,
+    groupTrigger: string,
+    messages: NewMessage[],
+  ): boolean {
+    if (requiresTrigger === false) return true;
+    const re = buildTriggerRegex(groupTrigger);
+    return messages.some((m) => re.test(m.content.trim()));
+  }
+
+  it('processes when group trigger @Bob is used', () => {
+    const msgs = [makeMsg({ content: '@Bob do something' })];
+    expect(shouldProcess(true, '@Bob', msgs)).toBe(true);
+  });
+
+  it('does not process when wrong trigger is used', () => {
+    const msgs = [makeMsg({ content: '@Andy do something' })];
+    expect(shouldProcess(true, '@Bob', msgs)).toBe(false);
+  });
+
+  it('processes when group trigger @Sally is used case-insensitively', () => {
+    const msgs = [makeMsg({ content: '@sally research this' })];
+    expect(shouldProcess(true, '@Sally', msgs)).toBe(true);
+  });
+});
