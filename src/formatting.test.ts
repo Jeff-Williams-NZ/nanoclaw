@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { ASSISTANT_NAME, TRIGGER_PATTERN } from './config.js';
+import { ASSISTANT_NAME, TRIGGER_PATTERN, buildTriggerRegex } from './config.js';
 import {
   escapeXml,
   formatMessages,
@@ -158,6 +158,28 @@ describe('TRIGGER_PATTERN', () => {
   it('matches with leading whitespace after trim', () => {
     // The actual usage trims before testing: TRIGGER_PATTERN.test(m.content.trim())
     expect(TRIGGER_PATTERN.test(`@${name} hey`.trim())).toBe(true);
+  });
+});
+
+// --- buildTriggerRegex ---
+
+describe('buildTriggerRegex', () => {
+  it('builds regex from @Name trigger string', () => {
+    const re = buildTriggerRegex('@Bob');
+    expect(re.test('@Bob hello')).toBe(true);
+    expect(re.test('@bob hello')).toBe(true);
+    expect(re.test('hello @Bob')).toBe(false);
+    expect(re.test('@Bobby hello')).toBe(false);
+  });
+
+  it('falls back to global TRIGGER_PATTERN for undefined', () => {
+    const re = buildTriggerRegex(undefined);
+    expect(re).toBe(TRIGGER_PATTERN);
+  });
+
+  it('handles names with special regex characters', () => {
+    const re = buildTriggerRegex('@C++Bot');
+    expect(re.test('@C++Bot help')).toBe(true);
   });
 });
 
