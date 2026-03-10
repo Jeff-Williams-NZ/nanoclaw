@@ -89,7 +89,8 @@ export class DiscordChannel implements Channel {
             .trim();
           // Use per-group trigger name if the group is registered, otherwise global
           const group = this.opts.registeredGroups()[chatJid];
-          const triggerName = group?.trigger?.replace(/^@/, '') || ASSISTANT_NAME;
+          const triggerName =
+            group?.trigger?.replace(/^@/, '') || ASSISTANT_NAME;
           const triggerRegex = buildTriggerRegex(group?.trigger);
           // Prepend trigger if not already present
           if (!triggerRegex.test(content)) {
