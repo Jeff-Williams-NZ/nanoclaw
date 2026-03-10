@@ -6,7 +6,11 @@ import {
   TextChannel,
 } from 'discord.js';
 
-import { ASSISTANT_NAME, buildTriggerRegex } from '../config.js';
+import {
+  ASSISTANT_NAME,
+  buildTriggerRegex,
+  primaryTriggerName,
+} from '../config.js';
 import { readEnvFile } from '../env.js';
 import { resolveGroupFolderPath } from '../group-folder.js';
 import { processImage } from '../image.js';
@@ -89,8 +93,7 @@ export class DiscordChannel implements Channel {
             .trim();
           // Use per-group trigger name if the group is registered, otherwise global
           const group = this.opts.registeredGroups()[chatJid];
-          const triggerName =
-            group?.trigger?.replace(/^@/, '') || ASSISTANT_NAME;
+          const triggerName = primaryTriggerName(group?.trigger);
           const triggerRegex = buildTriggerRegex(group?.trigger);
           // Prepend trigger if not already present
           if (!triggerRegex.test(content)) {

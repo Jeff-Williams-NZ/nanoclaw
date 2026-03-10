@@ -9,16 +9,27 @@ vi.mock('./registry.js', () => ({ registerChannel: vi.fn() }));
 vi.mock('../env.js', () => ({ readEnvFile: vi.fn(() => ({})) }));
 
 // Mock config
-vi.mock('../config.js', () => ({
-  ASSISTANT_NAME: 'Andy',
-  TRIGGER_PATTERN: /^@Andy\b/i,
-  buildTriggerRegex: (trigger?: string) => {
-    if (!trigger) return /^@Andy\b/i;
-    const name = trigger.startsWith('@') ? trigger.slice(1) : trigger;
-    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(`^@${escaped}\\b`, 'i');
-  },
-}));
+vi.mock('../config.js', () => {
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return {
+    ASSISTANT_NAME: 'Andy',
+    TRIGGER_PATTERN: /^@Andy\b/i,
+    buildTriggerRegex: (trigger?: string) => {
+      if (!trigger) return /^@Andy\b/i;
+      const names = trigger.split(',').map((t: string) => {
+        const trimmed = t.trim();
+        return trimmed.startsWith('@') ? trimmed.slice(1) : trimmed;
+      });
+      const pattern = names.map((n: string) => escape(n)).join('|');
+      return new RegExp(`^@(${pattern})\\b`, 'i');
+    },
+    primaryTriggerName: (trigger?: string) => {
+      if (!trigger) return 'Andy';
+      const first = trigger.split(',')[0].trim();
+      return first.startsWith('@') ? first.slice(1) : first;
+    },
+  };
+});
 
 // Mock logger
 vi.mock('../logger.js', () => ({

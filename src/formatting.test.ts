@@ -4,6 +4,7 @@ import {
   ASSISTANT_NAME,
   TRIGGER_PATTERN,
   buildTriggerRegex,
+  primaryTriggerName,
 } from './config.js';
 import {
   escapeXml,
@@ -184,6 +185,36 @@ describe('buildTriggerRegex', () => {
   it('handles names with special regex characters', () => {
     const re = buildTriggerRegex('@C++Bot');
     expect(re.test('@C++Bot help')).toBe(true);
+  });
+
+  it('handles comma-separated multi-trigger strings', () => {
+    const re = buildTriggerRegex('@Andy,@Bob,@Sally');
+    expect(re.test('@Andy hello')).toBe(true);
+    expect(re.test('@Bob hello')).toBe(true);
+    expect(re.test('@sally hello')).toBe(true);
+    expect(re.test('@Charlie hello')).toBe(false);
+    expect(re.test('hello @Andy')).toBe(false);
+  });
+
+  it('handles comma-separated with spaces', () => {
+    const re = buildTriggerRegex('@Andy, @Bob, @Sally');
+    expect(re.test('@Bob do something')).toBe(true);
+  });
+});
+
+// --- primaryTriggerName ---
+
+describe('primaryTriggerName', () => {
+  it('returns first name from single trigger', () => {
+    expect(primaryTriggerName('@Bob')).toBe('Bob');
+  });
+
+  it('returns first name from multi-trigger', () => {
+    expect(primaryTriggerName('@Andy,@Bob,@Sally')).toBe('Andy');
+  });
+
+  it('falls back to ASSISTANT_NAME for undefined', () => {
+    expect(primaryTriggerName(undefined)).toBe(ASSISTANT_NAME);
   });
 });
 

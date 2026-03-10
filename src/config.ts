@@ -59,14 +59,28 @@ function escapeRegex(str: string): string {
 }
 
 /**
- * Build a trigger regex from a stored trigger string (e.g. "@Bob" → /^@Bob\b/i).
+ * Build a trigger regex from a stored trigger string.
+ * Supports single ("@Bob") or comma-separated ("@Andy,@Bob,@Sally") triggers.
  * Returns the global TRIGGER_PATTERN if no trigger is provided.
  */
 export function buildTriggerRegex(trigger?: string): RegExp {
   if (!trigger) return TRIGGER_PATTERN;
-  // Strip leading @ if present, then build the regex
-  const name = trigger.startsWith('@') ? trigger.slice(1) : trigger;
-  return new RegExp(`^@${escapeRegex(name)}\\b`, 'i');
+  const names = trigger.split(',').map((t) => {
+    const trimmed = t.trim();
+    return trimmed.startsWith('@') ? trimmed.slice(1) : trimmed;
+  });
+  const pattern = names.map((n) => escapeRegex(n)).join('|');
+  return new RegExp(`^@(${pattern})\\b`, 'i');
+}
+
+/**
+ * Extract the first/primary trigger name from a trigger string.
+ * E.g. "@Andy,@Bob,@Sally" → "Andy"
+ */
+export function primaryTriggerName(trigger?: string): string {
+  if (!trigger) return ASSISTANT_NAME;
+  const first = trigger.split(',')[0].trim();
+  return first.startsWith('@') ? first.slice(1) : first;
 }
 
 export const TRIGGER_PATTERN = new RegExp(
