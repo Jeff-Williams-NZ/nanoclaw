@@ -4,6 +4,7 @@ import path from 'path';
 import {
   ASSISTANT_NAME,
   buildTriggerRegex,
+
   CREDENTIAL_PROXY_PORT,
   IDLE_TIMEOUT,
   POLL_INTERVAL,
